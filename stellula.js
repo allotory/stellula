@@ -1,4 +1,10 @@
 /*
+ * stellula.js
+ * Copyright (c) 2015 Ellery
+ * stellula.js is open sourced under the MIT license.
+ */
+
+/*
  * 描述对字段校验类
  * @param - fieldId - 要校验的字段的ID
  * @param - validators - 校验器对象数组
@@ -68,8 +74,7 @@ Field.prototype.data = function() {
  * @returns - {bool} - 校验失败，return false，否则返回true
  */
 required.prototype.verify = function(fieldValue) {
-	if(!fieldValue || fieldValue === "" || 
-		fieldValue === undefined || fieldValue === null) {
+	if(!fieldValue || fieldValue === "" || fieldValue === undefined || fieldValue === null) {
 		this.onFail();	//字段为空，校验失败
 		return false;
 	}
@@ -112,28 +117,28 @@ fieldLength.prototype.verify = function(fieldValue) {
  * @param - expression - 校验使用的正则表达式
  * @param - tip - 校验完成时的提示消息
  */
-function Exp_val(expression, tip){
-	this.exps=expression;
-	this.tips=tip;
-	this.on_suc=null;
-	this.on_error=null;
+function regExp(expression, tip) {
+	this.expression = expression;
+	this.tip = tip;
+	this.onSucc = null;
+	this.onFail = null;
 }
+
 /*
  * 扩展正则表达式校验器，增加校验方法
- * @param - fd - 需要校验字段的值
+ * @param - fieldValue - 需要校验字段的值
  * @returns - {bool} - 校验失败，return false，否则返回true
  */
-Exp_val.prototype.verify=function(fd){
-	//待校验字段不能为空
-	if(!fd){
-		this.on_suc();
-		return true;
+regExp.prototype.verify = function(fieldValue) {
+	if(!fieldValue || fieldValue === "" || fieldValue === undefined || fieldValue === null) {
+		this.onFail();	//字段为空，校验失败
+		return false;
 	}
-	if(this.exps.test(fd)){
-		this.on_suc();
+	if(this.expression.test(fieldValue)){
+		this.onSucc();	//正则表达式校验成功
 		return true;
 	}else{
-		this.on_error();
+		this.onFail();	//正则表达式校验失败
 		return false;
 	}
 }
