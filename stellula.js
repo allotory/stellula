@@ -17,7 +17,7 @@ function Field(params) {
 /*
  * 扩展Field，加入校验方法，循环校验器对象数组进行校验
  */
-Field.prototype.validate=function(){
+Field.prototype.validate = function(){
 	//循环每一个校验器
 	for(item in this.validators){
 		//给校验器添加校验成功和校验失败的回调事件
@@ -35,7 +35,7 @@ Field.prototype.validate=function(){
  * 校验器回调函数的方法
  * @param - validator - field字段类中校验器数组的一个元素，即一个校验器
  */
-Field.prototype.setCallback=function(validator){
+Field.prototype.setCallback = function(validator) {
 	var self = this;					//换一个名字来存储this，不然函数的闭包中会覆盖这个名字
 	validator.onSucc = function(){		//校验成功执行的方法
 		self.checked = true;			//将字段设置为校验成功        
@@ -50,8 +50,31 @@ Field.prototype.setCallback=function(validator){
 /*
  * 获取字段值的方法
  */
-Field.prototype.data=function(){
+Field.prototype.data = function() {
 	return document.getElementById(this.fieldId).value;
+}
+
+/*
+ * 字段是否为空校验器类
+ * @param - tip - 字段校验提示信息
+ */
+ function required(tip) {
+ 	this.tip = tip;
+ }
+
+/*
+ * 扩展字段是否为空校验器 
+ * @param - fieldValue - 需要校验字段的值
+ * @returns - {bool} - 校验失败，return false，否则返回true
+ */
+required.prototype.verify = function(fieldValue) {
+	if(!fieldValue || fieldValue === "" || 
+		fieldValue === undefined || fieldValue === null) {
+		this.onFail();	//字段为空，校验失败
+		return false;
+	}
+	this.onSucc();		//校验成功
+	return true;
 }
 
 /*
@@ -89,7 +112,7 @@ fieldLength.prototype.verify = function(fieldValue) {
  * @param - expression - 校验使用的正则表达式
  * @param - tip - 校验完成时的提示消息
  */
-function Exp_val(expression,tip){
+function Exp_val(expression, tip){
 	this.exps=expression;
 	this.tips=tip;
 	this.on_suc=null;
@@ -176,7 +199,7 @@ Man_val.prototype.verify=function(fd){
  * 表单验证主方法入口,此时失去焦点即开始校验
  * @param - items - field对象数组
  */
-function UserForm(items){
+function FormValidator(items){
 	this.fieldItem = items;								//把字段校验对象数组复制给属性
 	for(i=0; i<this.fieldItem.length; i++) {			//循环数组
 		//alert(this.f_item[idx].on_suc);
@@ -191,7 +214,7 @@ function UserForm(items){
  * 绑定校验事件的处理器，为了避开循环对闭包的影响
  * @param - field - field对象
  */
-UserForm.prototype.getCheck = function(field) {
+FormValidator.prototype.getCheck = function(field) {
 	return function(){		//返回包装了调用validate方法的事件
 		field.validate();
 	}
@@ -202,7 +225,7 @@ UserForm.prototype.getCheck = function(field) {
  * @param - bid - 提交按钮id
  * @param - bind - 提交时执行的方法
  */
-UserForm.prototype.set_submit=function(bid,bind){
+FormValidator.prototype.set_submit=function(bid,bind){
 	var self = this;
 	$("#"+bid).click(
 		function(){
@@ -216,7 +239,7 @@ UserForm.prototype.set_submit=function(bid,bind){
 /*
  * 提交时进行校验
  */
-UserForm.prototype.check=function(){
+FormValidator.prototype.check=function(){
 	for(idx in this.fieldItem){				//循环每一个校验器
 		this.fieldItem[idx].validate();		//再检测一遍
 		if(!this.fieldItem[idx].checked){   

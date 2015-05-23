@@ -8,9 +8,10 @@
 		var form;
 		$(
 		function(){
-		    var uf=new UserForm([new Field({
+		    var uf=new FormValidator([new Field({
 		            fid:"f1",
-		            val:[new fieldLength(2, 5, "长度错误")],
+		            //val:[new fieldLength(2, 5, "长度错误")],
+		            val:[new required("字段不能为空")],
 		            suc:function(text){
 		                $('#t1').text('zhengque');
 		                $('#t1').attr('class','suc');
