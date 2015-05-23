@@ -10,7 +10,7 @@
 		function(){
 		    var uf=new UserForm([new Field({
 		            fid:"f1",
-		            val:[new Len_val(2,5,"长度错误")],
+		            val:[new fieldLength(2, 5, "长度错误")],
 		            suc:function(text){
 		                $('#t1').text('zhengque');
 		                $('#t1').attr('class','suc');
