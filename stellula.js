@@ -5,6 +5,53 @@
  */
 
 /*
+ * 定义默认的提示消息及正则表达式
+ */
+ var defaults = {
+     msg: {
+		numeric: '该字段只能包含数字.',
+        required: '该字段不能为空.',
+		integer: '该字段必须包含一个整数.',
+
+        matches: 'The %s field does not match the %s field.',
+        "default": 'The %s field is still set to default, please change.',
+        valid_email: 'The %s field must contain a valid email address.',
+        valid_emails: 'The %s field must contain all valid email addresses.',
+        min_length: 'The %s field must be at least %s characters in length.',
+        max_length: 'The %s field must not exceed %s characters in length.',
+        exact_length: 'The %s field must be exactly %s characters in length.',
+        greater_than: 'The %s field must contain a number greater than %s.',
+        less_than: 'The %s field must contain a number less than %s.',
+        alpha: 'The %s field must only contain alphabetical characters.',
+        alpha_numeric: 'The %s field must only contain alpha-numeric characters.',
+        alpha_dash: 'The %s field must only contain alpha-numeric characters, underscores, and dashes.',
+        decimal: 'The %s field must contain a decimal number.',
+        is_natural: 'The %s field must contain only positive numbers.',
+        is_natural_no_zero: 'The %s field must contain a number greater than zero.',
+        valid_ip: 'The %s field must contain a valid IP.',
+        valid_base64: 'The %s field must contain a base64 string.',
+        valid_credit_card: 'The %s field must contain a valid credit card number.',
+        is_file_type: 'The %s field must contain only %s files.',
+        valid_url: 'The %s field must contain a valid URL.'
+    },
+    regex : {
+    	numericRegex : /^[0-9]+$/,
+		integerRegex : /^\-?[0-9]+$/,
+		decimalRegex : /^\-?[0-9]*\.?[0-9]+$/,
+		emailRegex : /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/,
+		alphaRegex : /^[a-z]+$/i,
+		alphaNumericRegex : /^[a-z0-9]+$/i,
+		alphaDashRegex : /^[a-z0-9_\-]+$/i,
+		naturalRegex : /^[0-9]+$/i,
+		naturalNoZeroRegex : /^[1-9][0-9]*$/i,
+		ipRegex : /^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})$/i,
+		base64Regex : /[^a-zA-Z0-9\/\+=]/i,
+		numericDashRegex : /^[\d\-\s]+$/,
+		urlRegex : /^((http|https):\/\/(\w+:{0,1}\w*@)?(\S+)|)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?$/
+    }
+ };
+
+/*
  * 描述对字段校验类
  * @param - fieldId - 要校验的字段的ID
  * @param - validators - 校验器对象数组
@@ -26,10 +73,25 @@ function Field(params) {
 Field.prototype.validate = function(){
 	//循环每一个校验器
 	for(item in this.validators){
+		//func = this.validators[item]
+		var func;
+		switch(this.validators[item]) {
+			case "numeric" :
+				func = new regExp(defaults.regex.numericRegex, defaults.msg.numeric);
+				break;
+			case "required" :
+				func = new required(defaults.messages.required);
+				break;
+			case "integer" :
+				func = new regExp(defaults.regex.integerRegex, defaults.msg.integer);
+				break;
+			default :
+
+		}
 		//给校验器添加校验成功和校验失败的回调事件
-		this.setCallback(this.validators[item]);
+		this.setCallback(func);
 		//执行校验器上的verify方法，校验是否符合规则
-		if(!this.validators[item].verify(this.data())){
+		if(!func.verify(this.data())){
 			//一旦任意一个校验器失败就停止，即同一个字段需要多个校验器时，
 			//第一次校验失败就跳出循环，并返回当前此次失败信息
 			break; 
@@ -65,7 +127,7 @@ Field.prototype.data = function() {
  * @param - tip - 字段校验提示信息
  */
  function required(tip) {
- 	this.tip = tip;
+	this.tip = tip;
  }
 
 /*
@@ -230,11 +292,11 @@ FormValidator.prototype.getCheck = function(field) {
  * @param - bid - 提交按钮id
  * @param - bind - 提交时执行的方法
  */
-FormValidator.prototype.set_submit=function(bid,bind){
+FormValidator.prototype.set_submit = function(bid,bind) {
 	var self = this;
 	$("#"+bid).click(
-		function(){
-			if(self.check()){
+		function() {
+			if(self.check()) {
 				bind();
 			}
 		}
@@ -244,10 +306,10 @@ FormValidator.prototype.set_submit=function(bid,bind){
 /*
  * 提交时进行校验
  */
-FormValidator.prototype.check=function(){
-	for(idx in this.fieldItem){				//循环每一个校验器
+FormValidator.prototype.check = function() {
+	for(idx in this.fieldItem) {			//循环每一个校验器
 		this.fieldItem[idx].validate();		//再检测一遍
-		if(!this.fieldItem[idx].checked){   
+		if(!this.fieldItem[idx].checked) {   
 			return false;					//如果错误就返回失败，阻止提交
 		}
 	}

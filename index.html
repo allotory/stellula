@@ -10,8 +10,9 @@
 		function(){
 		    var uf=new FormValidator([new Field({
 		            fid:"f1",
-		            val:[new regExp(/^[0-9]+$/, "必须只能包含数字")],
+		            //val:[new regExp(/^[0-9]+$/, "必须只能包含数字")],
 		            //val:[new required("字段不能为空"), new fieldLength(2, 5, "长度错误")],
+		            val:["integer"],
 		            suc:function(text){
 		                $('#t1').text('zhengque');
 		                $('#t1').attr('class','suc');
