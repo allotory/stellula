@@ -8,34 +8,24 @@
  * 定义默认的提示消息及正则表达式
  */
  var defaults = {
-     msg: {
+	 msg: {
+		required: '该字段不能为空.',
 		numeric: '该字段只能包含数字.',
-        required: '该字段不能为空.',
-		integer: '该字段必须包含一个整数.',
-
-        matches: 'The %s field does not match the %s field.',
-        "default": 'The %s field is still set to default, please change.',
-        valid_email: 'The %s field must contain a valid email address.',
-        valid_emails: 'The %s field must contain all valid email addresses.',
-        min_length: 'The %s field must be at least %s characters in length.',
-        max_length: 'The %s field must not exceed %s characters in length.',
-        exact_length: 'The %s field must be exactly %s characters in length.',
-        greater_than: 'The %s field must contain a number greater than %s.',
-        less_than: 'The %s field must contain a number less than %s.',
-        alpha: 'The %s field must only contain alphabetical characters.',
-        alpha_numeric: 'The %s field must only contain alpha-numeric characters.',
-        alpha_dash: 'The %s field must only contain alpha-numeric characters, underscores, and dashes.',
-        decimal: 'The %s field must contain a decimal number.',
-        is_natural: 'The %s field must contain only positive numbers.',
-        is_natural_no_zero: 'The %s field must contain a number greater than zero.',
-        valid_ip: 'The %s field must contain a valid IP.',
-        valid_base64: 'The %s field must contain a base64 string.',
-        valid_credit_card: 'The %s field must contain a valid credit card number.',
-        is_file_type: 'The %s field must contain only %s files.',
-        valid_url: 'The %s field must contain a valid URL.'
-    },
-    regex : {
-    	numericRegex : /^[0-9]+$/,
+		integer: '该字段只能包含一个整数.',
+		decimal: '该字段只能包含一个小数.',
+		email: '该字段必须是一个合法的Email地址.',
+		alpha: '该字段必须只能包含字母符号.',
+		alpha_numeric: '该字段只能包含字母数字字符.',
+		alpha_dash: '该字段只能包含字母数字字符，下划线以及破折号.',
+		natural: '该字段只能是0或一个正整数.',
+		natural_no_zero: '该字段只能是一个正整数.',
+		ip: '该字段必须是一个合法的IP地址.',
+		base64: '该字段必须是一个Base64编码的字符串.',
+		numeric_dash: '该字段只能包含数字及破折号.',
+		url: '该字段必须是一个合法的URL地址.'
+	},
+	regex : {
+		numericRegex : /^[0-9]+$/,
 		integerRegex : /^\-?[0-9]+$/,
 		decimalRegex : /^\-?[0-9]*\.?[0-9]+$/,
 		emailRegex : /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/,
@@ -48,7 +38,7 @@
 		base64Regex : /[^a-zA-Z0-9\/\+=]/i,
 		numericDashRegex : /^[\d\-\s]+$/,
 		urlRegex : /^((http|https):\/\/(\w+:{0,1}\w*@)?(\S+)|)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?$/
-    }
+	}
  };
 
 /*
@@ -73,21 +63,8 @@ function Field(params) {
 Field.prototype.validate = function(){
 	//循环每一个校验器
 	for(item in this.validators){
-		//func = this.validators[item]
-		var func;
-		switch(this.validators[item]) {
-			case "numeric" :
-				func = new regExp(defaults.regex.numericRegex, defaults.msg.numeric);
-				break;
-			case "required" :
-				func = new required(defaults.messages.required);
-				break;
-			case "integer" :
-				func = new regExp(defaults.regex.integerRegex, defaults.msg.integer);
-				break;
-			default :
-
-		}
+		//将校验规则转换为校验器对象
+		var func = getValidatorObj(this.validators[item]);
 		//给校验器添加校验成功和校验失败的回调事件
 		this.setCallback(func);
 		//执行校验器上的verify方法，校验是否符合规则
@@ -97,6 +74,63 @@ Field.prototype.validate = function(){
 			break; 
 		}
 	}
+}
+
+/*
+ * 将校验规则转换为校验器对象
+ * @param - validator - field字段类中校验器数组的一个元素，即一个校验器
+ */
+function getValidatorObj(validator) {
+	var func;
+	switch(validator) {
+		case "numeric" : 		//只能包含数字校验器
+			func = new regExp(defaults.regex.numericRegex, defaults.msg.numeric);
+			break;
+		case "required" : 		//字段不能为空校验器
+			func = new required(defaults.messages.required);
+			break;
+		case "integer" : 		//整数校验器
+			func = new regExp(defaults.regex.integerRegex, defaults.msg.integer);
+			break;
+		case "decimal" : 		//小数校验器
+			func = new regExp(defaults.regex.decimalRegex, defaults.msg.decimal);
+			break;
+		case "email" : 			//邮件地址校验器
+			func = new regExp(defaults.regex.emailRegex, defaults.msg.email);
+			break;
+		case "alpha" : 			//只能包含字母校验器
+			func = new regExp(defaults.regex.alphaRegex, defaults.msg.alpha);
+			break;
+		case "alpha_numeric" : 	//只能包含字母数字校验器
+			func = new regExp(defaults.regex.alphaNumericRegex, defaults.msg.alpha_numeric);
+			break;
+		case "alpha_dash" : 	//字母数字、下划线及破折号校验器
+			func = new regExp(defaults.regex.alphaDashRegex, defaults.msg.alpha_dash);
+			break;
+		case "natural" : 		//0或正整数校验器
+			func = new regExp(defaults.regex.naturalRegex, defaults.msg.natural);
+			break;
+		case "natural_no_zero" : 	//正整数校验器
+			func = new regExp(defaults.regex.naturalNoZeroRegex, defaults.msg.natural_no_zero);
+			break;
+		case "ip" : 			//IP地址校验器
+			func = new regExp(defaults.regex.ipRegex, defaults.msg.ip);
+			break;
+		case "base64" : 		//Base64编码校验器
+			func = new regExp(defaults.regex.base64Regex, defaults.msg.base64);
+			break;
+		case "numeric_dash" : 	//数字及破折号校验器
+			func = new regExp(defaults.regex.numericDashRegex, defaults.msg.numeric_dash);
+			break;
+		case "url" : 			//URL地址校验器
+			func = new regExp(defaults.regex.urlRegex, defaults.msg.url);
+			break;
+		default : 				//规则没找到～
+			func = null;
+			alert("system error!");
+			break;
+	}
+	return func;
 }
 
 /*
@@ -120,6 +154,13 @@ Field.prototype.setCallback = function(validator) {
  */
 Field.prototype.data = function() {
 	return document.getElementById(this.fieldId).value;
+}
+
+/*
+ * 获取字段name值
+ */
+Field.prototype.name = function() {
+	return document.getElementById(this.fieldId).name;
 }
 
 /*
