@@ -12,7 +12,7 @@
 		            fid:"f1",
 		            //val:[new regExp(/^[0-9]+$/, "必须只能包含数字")],
 		            //val:[new required("字段不能为空"), new fieldLength(2, 5, "长度错误")],
-		            val:["numeric"],
+		            val:["required", "numeric"],
 		            suc:function(text){
 		                $('#t1').text('zhengque');
 		                $('#t1').attr('class','suc');
@@ -39,7 +39,7 @@
 	</style>
 </head>
 <body>
-<input type="text" id="f1" name="f1"/><span id="t1"></span><br/>
+<input type="text" id="f1" name="field1"/><span id="t1"></span><br/>
 <input type="button" id="bt" value="提交"/>
 </body>
 </html>

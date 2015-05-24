@@ -9,20 +9,20 @@
  */
  var defaults = {
 	 msg: {
-		required: '该字段不能为空.',
-		numeric: '该字段只能包含数字.',
-		integer: '该字段只能包含一个整数.',
-		decimal: '该字段只能包含一个小数.',
-		email: '该字段必须是一个合法的Email地址.',
-		alpha: '该字段必须只能包含字母符号.',
-		alpha_numeric: '该字段只能包含字母数字字符.',
-		alpha_dash: '该字段只能包含字母数字字符，下划线以及破折号.',
-		natural: '该字段只能是0或一个正整数.',
-		natural_no_zero: '该字段只能是一个正整数.',
-		ip: '该字段必须是一个合法的IP地址.',
-		base64: '该字段必须是一个Base64编码的字符串.',
-		numeric_dash: '该字段只能包含数字及破折号.',
-		url: '该字段必须是一个合法的URL地址.'
+		required: "该'%s'字段不能为空.",
+		numeric: "该'%s'字段只能包含数字.",
+		integer: "该'%s'字段只能包含一个整数.",
+		decimal: "该'%s'字段只能包含一个小数.",
+		email: "该'%s'字段必须是一个合法的Email地址.",
+		alpha: "该'%s'字段必须只能包含字母符号.",
+		alpha_numeric: "该'%s'字段只能包含字母数字字符.",
+		alpha_dash: "该'%s'字段只能包含字母数字字符，下划线以及破折号.",
+		natural: "该'%s'字段只能是0或一个正整数.",
+		natural_no_zero: "该'%s'字段只能是一个正整数.",
+		ip: "该'%s'字段必须是一个合法的IP地址.",
+		base64: "该'%s'字段必须是一个Base64编码的字符串.",
+		numeric_dash: "该'%s'字段只能包含数字及破折号.",
+		url: "该'%s'字段必须是一个合法的URL地址."
 	},
 	regex : {
 		numericRegex : /^[0-9]+$/,
@@ -62,9 +62,13 @@ function Field(params) {
  */
 Field.prototype.validate = function(){
 	//循环每一个校验器
-	for(item in this.validators){
+	for(item in this.validators){	
 		//将校验规则转换为校验器对象
-		var func = getValidatorObj(this.validators[item]);
+		//var func = this.getValidatorObj(this.validators[item]);
+		var func;
+		if(typeof this.hooks[this.validators[item]] === 'function') {
+			func = this.hooks[this.validators[item]].apply(this, [this.fieldId]);
+		}
 		//给校验器添加校验成功和校验失败的回调事件
 		this.setCallback(func);
 		//执行校验器上的verify方法，校验是否符合规则
@@ -77,60 +81,94 @@ Field.prototype.validate = function(){
 }
 
 /*
- * 将校验规则转换为校验器对象
- * @param - validator - field字段类中校验器数组的一个元素，即一个校验器
+ * all of the validation hooks
+ * @param - fieldId - field字段id
  */
-function getValidatorObj(validator) {
-	var func;
-	switch(validator) {
-		case "numeric" : 		//只能包含数字校验器
-			func = new regExp(defaults.regex.numericRegex, defaults.msg.numeric);
-			break;
-		case "required" : 		//字段不能为空校验器
-			func = new required(defaults.messages.required);
-			break;
-		case "integer" : 		//整数校验器
-			func = new regExp(defaults.regex.integerRegex, defaults.msg.integer);
-			break;
-		case "decimal" : 		//小数校验器
-			func = new regExp(defaults.regex.decimalRegex, defaults.msg.decimal);
-			break;
-		case "email" : 			//邮件地址校验器
-			func = new regExp(defaults.regex.emailRegex, defaults.msg.email);
-			break;
-		case "alpha" : 			//只能包含字母校验器
-			func = new regExp(defaults.regex.alphaRegex, defaults.msg.alpha);
-			break;
-		case "alpha_numeric" : 	//只能包含字母数字校验器
-			func = new regExp(defaults.regex.alphaNumericRegex, defaults.msg.alpha_numeric);
-			break;
-		case "alpha_dash" : 	//字母数字、下划线及破折号校验器
-			func = new regExp(defaults.regex.alphaDashRegex, defaults.msg.alpha_dash);
-			break;
-		case "natural" : 		//0或正整数校验器
-			func = new regExp(defaults.regex.naturalRegex, defaults.msg.natural);
-			break;
-		case "natural_no_zero" : 	//正整数校验器
-			func = new regExp(defaults.regex.naturalNoZeroRegex, defaults.msg.natural_no_zero);
-			break;
-		case "ip" : 			//IP地址校验器
-			func = new regExp(defaults.regex.ipRegex, defaults.msg.ip);
-			break;
-		case "base64" : 		//Base64编码校验器
-			func = new regExp(defaults.regex.base64Regex, defaults.msg.base64);
-			break;
-		case "numeric_dash" : 	//数字及破折号校验器
-			func = new regExp(defaults.regex.numericDashRegex, defaults.msg.numeric_dash);
-			break;
-		case "url" : 			//URL地址校验器
-			func = new regExp(defaults.regex.urlRegex, defaults.msg.url);
-			break;
-		default : 				//规则没找到～
-			func = null;
-			alert("system error!");
-			break;
+Field.prototype.hooks = {
+	numeric: function(fieldId) {		//只能包含数字校验器
+		var name = document.getElementById(fieldId).name;
+		var message = defaults.msg.numeric.replace("%s", name);
+		var func = new regExp(defaults.regex.numericRegex, message);
+		return func;
+	},
+	required : function(fieldId) {		//字段不能为空校验器
+		var name = document.getElementById(fieldId).name;
+		var message = defaults.msg.required.replace("%s", name);
+		var func = new required(message);
+		return func;
+	},
+	integer : function(fieldId) {		//整数校验器
+		var name = document.getElementById(fieldId).name;
+		var message = defaults.msg.integer.replace("%s", name);
+		var func = new regExp(defaults.regex.integerRegex, message);
+		return func;
+	},
+	decimal : function(fieldId) {		//小数校验器
+		var name = document.getElementById(fieldId).name;
+		var message = defaults.msg.decimal.replace("%s", name);
+		var func = new regExp(defaults.regex.decimalRegex, message);
+		return func;
+	},
+	email : function(fieldId) {			//邮件地址校验器
+		var name = document.getElementById(fieldId).name;
+		var message = defaults.msg.email.replace("%s", name);
+		var func = new regExp(defaults.regex.emailRegex, message);
+		return func;
+	},
+	alpha : function(fieldId) {			//只能包含字母校验器
+		var name = document.getElementById(fieldId).name;
+		var message = defaults.msg.alpha.replace("%s", name);
+		var func = new regExp(defaults.regex.alphaRegex, message);
+		return func;
+	},
+	alpha_numeric : function(fieldId) {	//只能包含字母数字校验器
+		var name = document.getElementById(fieldId).name;
+		var message = defaults.msg.alpha_numeric.replace("%s", name);
+		var func = new regExp(defaults.regex.alphaNumericRegex, message);
+		return func;
+	},
+	alpha_dash : function(fieldId) {	//字母数字、下划线及破折号校验器
+		var name = document.getElementById(fieldId).name;
+		var message = defaults.msg.alpha_dash.replace("%s", name);
+		var func = new regExp(defaults.regex.alphaDashRegex, message);
+		return func;
+	},
+	natural : function(fieldId) {		//0或正整数校验器
+		var name = document.getElementById(fieldId).name;
+		var message = defaults.msg.natural.replace("%s", name);
+		var func = new regExp(defaults.regex.naturalRegex, message);
+		return func;
+	},
+	natural_no_zero : function(fieldId) {//正整数校验器
+		var name = document.getElementById(fieldId).name;
+		var message = defaults.msg.natural_no_zero.replace("%s", name);
+		var func = new regExp(defaults.regex.naturalNoZeroRegex, message);
+		return func;
+	},
+	ip : function(fieldId) {			//IP地址校验器
+		var name = document.getElementById(fieldId).name;
+		var message = defaults.msg.ip.replace("%s", name);
+		var func = new regExp(defaults.regex.ipRegex, message);
+		return func;
+	},
+	base64 : function(fieldId) {		//Base64编码校验器
+		var name = document.getElementById(fieldId).name;
+		var message = defaults.msg.base64.replace("%s", name);
+		var func = new regExp(defaults.regex.base64Regex, message);
+		return func;
+	},
+	numeric_dash : function(fieldId) {	//数字及破折号校验器
+		var name = document.getElementById(fieldId).name;
+		var message = defaults.msg.numeric_dash.replace("%s", name);
+		var func = new regExp(defaults.regex.numericDashRegex, message);
+		return func;
+	},
+	url : function(fieldId) {			//URL地址校验器
+		var name = document.getElementById(fieldId).name;
+		var message = defaults.msg.url.replace("%s", name);
+		var func = new regExp(defaults.regex.urlRegex, message);
+		return func;
 	}
-	return func;
 }
 
 /*
