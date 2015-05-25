@@ -11,6 +11,8 @@
 	 msg: {
 		required: "该'%s'字段不能为空.",
 		numeric: "该'%s'字段只能包含数字.",
+		min_length: "该'%s'字段必须至少'%n'个字符.",
+		max_length: "该'%s'字段必须最多'%n'个字符.",
 		integer: "该'%s'字段只能包含一个整数.",
 		decimal: "该'%s'字段只能包含一个小数.",
 		email: "该'%s'字段必须是一个合法的Email地址.",
@@ -25,6 +27,7 @@
 		url: "该'%s'字段必须是一个合法的URL地址."
 	},
 	regex : {
+		ruleRegex : /^(.+?)\[(.+)\]$/,
 		numericRegex : /^[0-9]+$/,
 		integerRegex : /^\-?[0-9]+$/,
 		decimalRegex : /^\-?[0-9]*\.?[0-9]+$/,
@@ -64,10 +67,23 @@ Field.prototype.validate = function(){
 	//循环每一个校验器
 	for(item in this.validators){	
 		//将校验规则转换为校验器对象
-		//var func = this.getValidatorObj(this.validators[item]);
+		//获取到规则及其参数
+		var parts = defaults.regex.ruleRegex.exec(this.validators[item]);
+		var method = this.validators[item];
+		var param = null;
+		//如果规则带参数则将其分割
+		if (parts) {
+            method = parts[1];
+            param = parts[2];
+        }
+
+        if (method.charAt(0) === '!') {
+            method = method.substring(1, method.length);
+        }
+
 		var func;
-		if(typeof this.hooks[this.validators[item]] === 'function') {
-			func = this.hooks[this.validators[item]].apply(this, [this.fieldId]);
+		if(typeof this.hooks[method] === 'function') {
+			func = this.hooks[method].apply(this, [this.fieldId, param]);
 		}
 		//给校验器添加校验成功和校验失败的回调事件
 		this.setCallback(func);
@@ -85,6 +101,20 @@ Field.prototype.validate = function(){
  * @param - fieldId - field字段id
  */
 Field.prototype.hooks = {
+	min_length: function(fieldId, length) {
+		var name = document.getElementById(fieldId).name;
+		var message = defaults.msg.min_length.replace("%s", name);
+		message = message.replace("%n", length);
+		var func = new minLength(length, message);
+		return func;
+	},
+	max_length: function(fieldId, length) {
+		var name = document.getElementById(fieldId).name;
+		var message = defaults.msg.max_length.replace("%s", name);
+		message = message.replace("%n", length);
+		var func = new maxLength(length, message);
+		return func;
+	},
 	numeric: function(fieldId) {		//只能包含数字校验器
 		var name = document.getElementById(fieldId).name;
 		var message = defaults.msg.numeric.replace("%s", name);
@@ -226,13 +256,39 @@ required.prototype.verify = function(fieldValue) {
 /*
  * 长度校验的校验器类
  * @param - minLen - 校验字段的最小长度
+ * @param - tip - 字段校验完成时的提示信息
+ * @param - onSucc - 校验成功
+ * @param - onFail - 校验失败
+*/
+function minLength(minLen, tip) {
+	this.minLen = minLen;
+	this.tip = tip;
+	this.onSucc = null;
+	this.onFail = null;
+}
+
+/*
+ * 扩展长度校验器，增加校验方法
+ * @param - fieldValue - 需要校验字段的值
+ * @returns - {bool} - 校验失败，return false，否则返回true
+ */
+minLength.prototype.verify = function(fieldValue) {
+	if((fieldValue.length < this.minLen)){
+		this.onFail();	//长度不足，校验失败
+		return false;
+	}
+	this.onSucc();		//校验成功
+	return true;
+}
+
+/*
+ * 长度校验的校验器类
  * @param - maxLen - 校验字段的最大长度
  * @param - tip - 字段校验完成时的提示信息
  * @param - onSucc - 校验成功
  * @param - onFail - 校验失败
 */
-function fieldLength(minLen, maxLen, tip) {
-	this.minLen = minLen;
+function maxLength(maxLen, tip) {
 	this.maxLen = maxLen;
 	this.tip = tip;
 	this.onSucc = null;
@@ -244,9 +300,9 @@ function fieldLength(minLen, maxLen, tip) {
  * @param - fieldValue - 需要校验字段的值
  * @returns - {bool} - 校验失败，return false，否则返回true
  */
-fieldLength.prototype.verify = function(fieldValue) {
-	if((fieldValue.length < this.minLen) || (fieldValue.length > this.maxLen)){
-		this.onFail();	//长度不足或超出范围，校验失败
+maxLength.prototype.verify = function(fieldValue) {
+	if((fieldValue.length > this.maxLen)){
+		this.onFail();	//超出范围，校验失败
 		return false;
 	}
 	this.onSucc();		//校验成功
