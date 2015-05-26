@@ -44,6 +44,9 @@
 	}
  };
 
+/*
+ * 自定义规则函数及提示消息
+ */
  var customs = {
 	handlers : {},
 	messages : {}
@@ -81,19 +84,17 @@ Field.prototype.validate = function(){
 			method = parts[1];
 			param = parts[2];
 		}
-
+		//如果规则带'!'则截取去掉
 		if (method.charAt(0) === '!') {
 			method = method.substring(1, method.length);
 		}
 
-
-		if(typeof this.hooks[method] === 'function') {
+		//判断规则是自带默认规格还是自定义规则
+		if(typeof this.hooks[method] === 'function') {		//默认规则
 			if(!this.hooks[method].apply(this, [this, this.fieldId, param])) {
 				break;
 			}
-		}
-		else if (method.substring(0, 7) === 'custom_') {
-			//自定义方法名
+		}else if (method.substring(0, 7) === 'custom_') {	//自定义规则
 			method = method.substring(7, method.length);
 			if (typeof customs.handlers[method] === 'function') {
 				if(!customs.handlers[method].apply(this, [this, this.fieldId, param])) {
