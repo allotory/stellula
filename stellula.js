@@ -44,6 +44,11 @@
 	}
  };
 
+ var customs = {
+	handlers : {},
+	messages : {}
+ };
+
 /*
  * 描述对字段校验类
  * @param - fieldId - 要校验的字段的ID
@@ -53,10 +58,10 @@
  * @param - checked - 当前字段是否通过校验
  */
 function Field(params) {
-	this.fieldId = params.fid;
-	this.validators = params.val;
-	this.success = params.suc;
-	this.failure = params.err;
+	this.fieldId = params.id;
+	this.validators = params.rule;
+	this.success = params.success;
+	this.failure = params.errors;
 	this.checked = false;
 }
 
@@ -81,24 +86,24 @@ Field.prototype.validate = function(){
 			method = method.substring(1, method.length);
 		}
 
-		var func;
-		//alert(this.hooks[method]);
+
 		if(typeof this.hooks[method] === 'function') {
 			if(!this.hooks[method].apply(this, [this, this.fieldId, param])) {
 				break;
 			}
 		}
-		// else if (method.substring(0, 7) === 'custom_') {
-		// 	//自定义方法名
-		// 	method = method.substring(7, method.length);
-
-		// 	if (typeof this.handlers[method] === 'function') {
-		// 		func = this.handlers[method].apply(this, [this.fieldId, param]);
-		// 		// if (this.handlers[method].apply(this, [field.value, param, field]) === false) {
-		// 		// 	failed = true;
-		// 		// }
-		// 	}
-		// }
+		else if (method.substring(0, 7) === 'custom_') {
+			//自定义方法名
+			method = method.substring(7, method.length);
+			if (typeof customs.handlers[method] === 'function') {
+				if(!customs.handlers[method].apply(this, [this, this.fieldId, param])) {
+					break;
+				}
+				
+			}
+		}else {
+			alert("system error!");
+		}
 	}
 }
 
@@ -249,32 +254,6 @@ Field.prototype.name = function(fieldId) {
 }
 
 /*
- * 自定义函数校验器
- * @param - tip - 校验完成时的提示消息
- * @param - func - 自定义的校验器
-*/
-function custom(tip, func) {
-	this.tip = tip;
-	this.val_func = func;
-	this.tip = tip;
-	this.onSucc = null;
-	this.onFail = null;
-}
-
-/*
- * 扩展自定义校验器，增加校验方法
- * @param - fd - 需要校验字段的值
- * @returns - {bool} - 校验失败，return false，否则返回true
- */
-custom.prototype.verify = function(fd){
-	if(this.val_func(fd)){
-		this.onSucc();
-	}else{
-		this.onFail();
-	}
-}
-
-/*
  * 远程校验器
  * @param - url - 远程服务器地址
  * @param - tip - 校验完成时的提示消息
@@ -311,16 +290,10 @@ Remote_val.prototype.verify=function(fd){
  * @param - items - field对象数组
  */
 function FormValidator(items){
-	this.handlers = {};
-	this.messages = {};
-	//alert(this.handlers["check_null"]);
 	this.fieldItem = items;								//把字段校验对象数组复制给属性
 	for(i=0; i<this.fieldItem.length; i++) {			//循环数组
-		//alert(this.f_item[idx].on_suc);
 		var fc = this.getCheck(this.fieldItem[i]);		//获取封装后的回调事件
 		$("#" + this.fieldItem[i].fieldId).blur(fc);	//绑定到控件上
-		//alert(fc);
-		//document.getElementById(this.f_item[idx].field_id).blur(fc);
 	}
 }
 
@@ -341,8 +314,7 @@ FormValidator.prototype.getCheck = function(field) {
  */
 FormValidator.prototype.registerCallback = function(name, handler) {
 	if (name && typeof name === 'string' && handler && typeof handler === 'function') {
-		this.handlers[name] = handler;
-		//alert(this.handlers["check_null"]);
+		customs.handlers[name] = handler;
 	}
 
 	return this;
@@ -354,7 +326,7 @@ FormValidator.prototype.registerCallback = function(name, handler) {
  * @param - handler - 自定义函数
  */
 FormValidator.prototype.setMessage = function(rule, message) {
-	this.messages[rule] = message;
+	customs.messages[rule] = message;
 	return this;
 };
 
@@ -378,11 +350,15 @@ FormValidator.prototype.set_submit = function(bid,bind) {
  * 提交时进行校验
  */
 FormValidator.prototype.check = function() {
+	var temp = 0;							//临时变量记录是否有字段校验失败
 	for(idx in this.fieldItem) {			//循环每一个校验器
 		this.fieldItem[idx].validate();		//再检测一遍
 		if(!this.fieldItem[idx].checked) {   
-			return false;					//如果错误就返回失败，阻止提交
+			temp ++;						//如果错误则字段记录加一，阻止提交
 		}
+	}
+	if(temp > 0) {							//有至少一个字段校验失败
+		return false;
 	}
 	return true;							//一个都没错就返回成功执行提交
 }
