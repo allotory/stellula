@@ -335,7 +335,7 @@ FormValidator.prototype.setMessage = function(rule, message) {
  * @param - bid - 提交按钮id
  * @param - bind - 提交时执行的方法
  */
-FormValidator.prototype.set_submit = function(bid,bind) {
+FormValidator.prototype.setSubmit = function(bid,bind) {
 	var self = this;
 	$("#"+bid).click(
 		function() {

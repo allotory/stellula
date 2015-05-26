@@ -5,10 +5,10 @@
 	<script type="text/javascript" src="stellula.js"></script>
 	<script type="text/javascript" src="jquery-1.11.2.min.js"></script>
 	<script type="text/javascript">
-		var form;
+		var form;			
 		$(
 		function(){
-			var uf=new FormValidator(
+			var uf = new FormValidator(
 				[new Field({
 					id:"requiredId",								//待校验字段id
 					rule:["required"],								//校验规则数组
@@ -44,7 +44,7 @@
 				self.onSucc(tip);				//将字段设置为校验成功
 				return true;
 			}).setMessage("check_field", tip);	//设置提示信息
-			uf.set_submit(
+			uf.setSubmit(
 				"submit",
 				function(form){
 					//在该方法中进行提交
