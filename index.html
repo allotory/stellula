@@ -8,27 +8,32 @@
 		var form;
 		$(
 		function(){
-		    var uf=new FormValidator([new Field({
-		            fid:"f1",
-		            //val:[new regExp(/^[0-9]+$/, "必须只能包含数字")],
-		            //val:[new required("字段不能为空"), new fieldLength(2, 5, "长度错误")],
-		            val:["min_length[5]", "max_length[7]"],
-		            suc:function(text){
-		                $('#t1').text('zhengque');
-		                $('#t1').attr('class','suc');
-		            },
-		            err:function(text){
-		                $('#t1').text(text);
-		                $('#t1').attr('class','error');
-		            }
-		        })
-		    ]);
-		    uf.set_submit(
-		        "bt",
-		        function(form){
-		            alert("表单已经提交了");
-		        }
-		    );
+			var uf=new FormValidator([new Field({
+					fid:"f1",
+					//val:[new regExp(/^[0-9]+$/, "必须只能包含数字")],
+					//val:[new required("字段不能为空"), new fieldLength(2, 5, "长度错误")],
+					val:["min_length[2]", "max_length[4]"],
+					suc:function(text){
+						$('#t1').text('zhengque');
+						$('#t1').attr('class','suc');
+					},
+					err:function(text){
+						$('#t1').text(text);
+						$('#t1').attr('class','error');
+					}
+				})
+			]);
+			// uf.registerCallback('check_null', function(value) {
+			// 	var name = document.getElementById(fieldId).name;
+			// 	var message = this.messages['check_null'].replace("%s", name);
+				
+			// }).setMessage('check_null', '不能为空快%s快快快快快快快.');
+			uf.set_submit(
+				"bt",
+				function(form){
+					alert("表单已经提交了");
+				}
+			);
 		}
 		);
 

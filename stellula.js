@@ -73,270 +73,204 @@ Field.prototype.validate = function(){
 		var param = null;
 		//如果规则带参数则将其分割
 		if (parts) {
-            method = parts[1];
-            param = parts[2];
-        }
+			method = parts[1];
+			param = parts[2];
+		}
 
-        if (method.charAt(0) === '!') {
-            method = method.substring(1, method.length);
-        }
+		if (method.charAt(0) === '!') {
+			method = method.substring(1, method.length);
+		}
 
 		var func;
+		//alert(this.hooks[method]);
 		if(typeof this.hooks[method] === 'function') {
-			func = this.hooks[method].apply(this, [this.fieldId, param]);
+			if(!this.hooks[method].apply(this, [this, this.fieldId, param])) {
+				break;
+			}
 		}
-		//给校验器添加校验成功和校验失败的回调事件
-		this.setCallback(func);
-		//执行校验器上的verify方法，校验是否符合规则
-		if(!func.verify(this.data())){
-			//一旦任意一个校验器失败就停止，即同一个字段需要多个校验器时，
-			//第一次校验失败就跳出循环，并返回当前此次失败信息
-			break; 
-		}
+		// else if (method.substring(0, 7) === 'custom_') {
+		// 	//自定义方法名
+		// 	method = method.substring(7, method.length);
+
+		// 	if (typeof this.handlers[method] === 'function') {
+		// 		func = this.handlers[method].apply(this, [this.fieldId, param]);
+		// 		// if (this.handlers[method].apply(this, [field.value, param, field]) === false) {
+		// 		// 	failed = true;
+		// 		// }
+		// 	}
+		// }
 	}
 }
 
 /*
- * all of the validation hooks
+ * 默认校验方法
  * @param - fieldId - field字段id
  */
 Field.prototype.hooks = {
-	min_length: function(fieldId, length) {
-		var name = document.getElementById(fieldId).name;
-		var message = defaults.msg.min_length.replace("%s", name);
-		message = message.replace("%n", length);
-		var func = new minLength(length, message);
-		return func;
+	min_length: function(self, fieldId, length) {
+		//处理替换提示消息内容
+		var fieldName = self.name(fieldId);
+		var message = defaults.msg.min_length.replace("%s", fieldName).replace("%n", length);
+		//获取需要校验字段值
+		var fieldValue = self.data(fieldId);
+		if((fieldValue.length < length)){
+			self.onFail(message);		//字段设置为校验失败
+			return false;
+		}
+		self.onSucc(message);			//将字段设置为校验成功
+		return true;
 	},
-	max_length: function(fieldId, length) {
-		var name = document.getElementById(fieldId).name;
-		var message = defaults.msg.max_length.replace("%s", name);
-		message = message.replace("%n", length);
-		var func = new maxLength(length, message);
-		return func;
+	max_length: function(self, fieldId, length) {
+		//处理替换提示消息内容
+		var fieldName = self.name(fieldId);
+		var message = defaults.msg.max_length.replace("%s", fieldName).replace("%n", length);
+		//获取需要校验字段值
+		var fieldValue = self.data(fieldId);
+		if((fieldValue.length > length)){
+			self.onFail(message);		//字段设置为校验失败
+			return false;
+		}
+		self.onSucc(message);			//将字段设置为校验成功
+		return true;
 	},
-	numeric: function(fieldId) {		//只能包含数字校验器
-		var name = document.getElementById(fieldId).name;
-		var message = defaults.msg.numeric.replace("%s", name);
-		var func = new regExp(defaults.regex.numericRegex, message);
-		return func;
+	required : function(self, fieldId) {	//字段不能为空校验器
+		var fieldName = self.name(fieldId);
+		var message = defaults.msg.required.replace("%s", fieldName);
+		//获取需要校验字段值
+		var fieldValue = self.data(fieldId);
+		if(!fieldValue || fieldValue === "" || fieldValue === undefined || fieldValue === null) {
+			self.onFail(message);			//字段设置为校验失败
+			return false;
+		}
+		self.onSucc(message);				//将字段设置为校验成功
+		return true;
+
 	},
-	required : function(fieldId) {		//字段不能为空校验器
-		var name = document.getElementById(fieldId).name;
-		var message = defaults.msg.required.replace("%s", name);
-		var func = new required(message);
-		return func;
+	numeric: function(self, fieldId) {			//只能包含数字校验器
+		return self.regExp(fieldId, defaults.msg.numeric, defaults.regex.numericRegex);
 	},
-	integer : function(fieldId) {		//整数校验器
-		var name = document.getElementById(fieldId).name;
-		var message = defaults.msg.integer.replace("%s", name);
-		var func = new regExp(defaults.regex.integerRegex, message);
-		return func;
+	integer : function(self, fieldId) {			//整数校验器
+		return self.regExp(fieldId, defaults.msg.integer, defaults.regex.integerRegex);
 	},
-	decimal : function(fieldId) {		//小数校验器
-		var name = document.getElementById(fieldId).name;
-		var message = defaults.msg.decimal.replace("%s", name);
-		var func = new regExp(defaults.regex.decimalRegex, message);
-		return func;
+	decimal : function(self, fieldId) {			//小数校验器
+		return self.regExp(fieldId, defaults.msg.decimal, defaults.regex.decimalRegex);
 	},
-	email : function(fieldId) {			//邮件地址校验器
-		var name = document.getElementById(fieldId).name;
-		var message = defaults.msg.email.replace("%s", name);
-		var func = new regExp(defaults.regex.emailRegex, message);
-		return func;
+	email : function(self, fieldId) {			//邮件地址校验器
+		return self.regExp(fieldId, defaults.msg.email, defaults.regex.emailRegex);
 	},
-	alpha : function(fieldId) {			//只能包含字母校验器
-		var name = document.getElementById(fieldId).name;
-		var message = defaults.msg.alpha.replace("%s", name);
-		var func = new regExp(defaults.regex.alphaRegex, message);
-		return func;
+	alpha : function(self, fieldId) {			//只能包含字母校验器
+		return self.regExp(fieldId, defaults.msg.alpha, defaults.regex.alphaRegex);
 	},
-	alpha_numeric : function(fieldId) {	//只能包含字母数字校验器
-		var name = document.getElementById(fieldId).name;
-		var message = defaults.msg.alpha_numeric.replace("%s", name);
-		var func = new regExp(defaults.regex.alphaNumericRegex, message);
-		return func;
+	alpha_numeric : function(self, fieldId) {	//只能包含字母数字校验器
+		return self.regExp(fieldId, defaults.msg.alpha_numeric, defaults.regex.alphaNumericRegex);
 	},
-	alpha_dash : function(fieldId) {	//字母数字、下划线及破折号校验器
-		var name = document.getElementById(fieldId).name;
-		var message = defaults.msg.alpha_dash.replace("%s", name);
-		var func = new regExp(defaults.regex.alphaDashRegex, message);
-		return func;
+	alpha_dash : function(self, fieldId) {		//字母数字、下划线及破折号校验器
+		return self.regExp(fieldId, defaults.msg.alpha_dash, defaults.regex.alphaDashRegex);
 	},
-	natural : function(fieldId) {		//0或正整数校验器
-		var name = document.getElementById(fieldId).name;
-		var message = defaults.msg.natural.replace("%s", name);
-		var func = new regExp(defaults.regex.naturalRegex, message);
-		return func;
+	natural : function(self, fieldId) {			//0或正整数校验器
+		return self.regExp(fieldId, defaults.msg.natural, defaults.regex.naturalRegex);
 	},
-	natural_no_zero : function(fieldId) {//正整数校验器
-		var name = document.getElementById(fieldId).name;
-		var message = defaults.msg.natural_no_zero.replace("%s", name);
-		var func = new regExp(defaults.regex.naturalNoZeroRegex, message);
-		return func;
+	natural_no_zero : function(self, fieldId) {	//正整数校验器
+		return self.regExp(fieldId, defaults.msg.natural_no_zero, defaults.regex.naturalNoZeroRegex);
 	},
-	ip : function(fieldId) {			//IP地址校验器
-		var name = document.getElementById(fieldId).name;
-		var message = defaults.msg.ip.replace("%s", name);
-		var func = new regExp(defaults.regex.ipRegex, message);
-		return func;
+	ip : function(self, fieldId) {				//IP地址校验器
+		return self.regExp(fieldId, defaults.msg.ip, defaults.regex.ipRegex);
 	},
-	base64 : function(fieldId) {		//Base64编码校验器
-		var name = document.getElementById(fieldId).name;
-		var message = defaults.msg.base64.replace("%s", name);
-		var func = new regExp(defaults.regex.base64Regex, message);
-		return func;
+	base64 : function(self, fieldId) {			//Base64编码校验器
+		return self.regExp(fieldId, defaults.msg.base64, defaults.regex.base64Regex);
 	},
-	numeric_dash : function(fieldId) {	//数字及破折号校验器
-		var name = document.getElementById(fieldId).name;
-		var message = defaults.msg.numeric_dash.replace("%s", name);
-		var func = new regExp(defaults.regex.numericDashRegex, message);
-		return func;
+	numeric_dash : function(self, fieldId) {	//数字及破折号校验器
+		return self.regExp(fieldId, defaults.msg.numeric_dash, defaults.regex.numericDashRegex);
 	},
-	url : function(fieldId) {			//URL地址校验器
-		var name = document.getElementById(fieldId).name;
-		var message = defaults.msg.url.replace("%s", name);
-		var func = new regExp(defaults.regex.urlRegex, message);
-		return func;
+	url : function(self, fieldId) {				//URL地址校验器
+		return self.regExp(fieldId, defaults.msg.url, defaults.regex.urlRegex);
 	}
 }
 
 /*
- * 校验器回调函数的方法
+ * 校验器正则表达式校验方法
  * @param - validator - field字段类中校验器数组的一个元素，即一个校验器
  */
-Field.prototype.setCallback = function(validator) {
-	var self = this;					//换一个名字来存储this，不然函数的闭包中会覆盖这个名字
-	validator.onSucc = function(){		//校验成功执行的方法
-		self.checked = true;			//将字段设置为校验成功        
-		self.success(validator.tip);	//执行校验成功的事件
+Field.prototype.regExp = function(fieldId, tip, regex) {
+	var self = this;
+	var fieldName = self.name(fieldId);
+	var message = tip.replace("%s", fieldName);
+	//获取需要校验字段值
+	var fieldValue = self.data(fieldId);
+	//字段为空时直接判断校验失败
+	if(!fieldValue || fieldValue === "" || fieldValue === undefined || fieldValue === null) {
+		self.onFail(message);		//字段设置为校验失败
+		return false;
 	}
-	validator.onFail = function(){		//校验失败的时候执行的方法
-		self.checked = false;			//字段设置为校验失败
-		self.failure(validator.tip);	//执行校验失败的事件
+	//进行正则表达式校验
+	if(regex.test(fieldValue)){
+		self.onSucc(message);		//将字段设置为校验成功
+		return true;
+	}else{
+		self.onFail(message);		//字段设置为校验失败
+		return false;
 	}
+}
+
+/*
+ * 字段校验成功时调用
+ * @param - tip - 字段校验提示信息
+ */
+Field.prototype.onSucc = function(tip) {
+	var self = this;				//换一个名字来存储this，不然函数的闭包中会覆盖这个名字
+	self.checked = true;			//将字段设置为校验成功        
+	self.success(tip);
+}
+
+/*
+ * 字段校验失败时调用
+ * @param - tip - 字段校验提示信息
+ */
+Field.prototype.onFail = function(tip) {
+	var self = this;				//换一个名字来存储this，不然函数的闭包中会覆盖这个名字
+	self.checked = false;			//将字段设置为校验成功        
+	self.failure(tip);
 }
 
 /*
  * 获取字段值的方法
+ * @param - fieldId - 当前校验字段id
  */
-Field.prototype.data = function() {
-	return document.getElementById(this.fieldId).value;
+Field.prototype.data = function(fieldId) {
+	return document.getElementById(fieldId).value;
 }
 
 /*
  * 获取字段name值
+ * @param - fieldId - 当前校验字段id
  */
-Field.prototype.name = function() {
-	return document.getElementById(this.fieldId).name;
+Field.prototype.name = function(fieldId) {
+	return document.getElementById(fieldId).name;
 }
 
 /*
- * 字段是否为空校验器类
- * @param - tip - 字段校验提示信息
- */
- function required(tip) {
-	this.tip = tip;
- }
-
-/*
- * 扩展字段是否为空校验器 
- * @param - fieldValue - 需要校验字段的值
- * @returns - {bool} - 校验失败，return false，否则返回true
- */
-required.prototype.verify = function(fieldValue) {
-	if(!fieldValue || fieldValue === "" || fieldValue === undefined || fieldValue === null) {
-		this.onFail();	//字段为空，校验失败
-		return false;
-	}
-	this.onSucc();		//校验成功
-	return true;
-}
-
-/*
- * 长度校验的校验器类
- * @param - minLen - 校验字段的最小长度
- * @param - tip - 字段校验完成时的提示信息
- * @param - onSucc - 校验成功
- * @param - onFail - 校验失败
-*/
-function minLength(minLen, tip) {
-	this.minLen = minLen;
-	this.tip = tip;
-	this.onSucc = null;
-	this.onFail = null;
-}
-
-/*
- * 扩展长度校验器，增加校验方法
- * @param - fieldValue - 需要校验字段的值
- * @returns - {bool} - 校验失败，return false，否则返回true
- */
-minLength.prototype.verify = function(fieldValue) {
-	if((fieldValue.length < this.minLen)){
-		this.onFail();	//长度不足，校验失败
-		return false;
-	}
-	this.onSucc();		//校验成功
-	return true;
-}
-
-/*
- * 长度校验的校验器类
- * @param - maxLen - 校验字段的最大长度
- * @param - tip - 字段校验完成时的提示信息
- * @param - onSucc - 校验成功
- * @param - onFail - 校验失败
-*/
-function maxLength(maxLen, tip) {
-	this.maxLen = maxLen;
-	this.tip = tip;
-	this.onSucc = null;
-	this.onFail = null;
-}
-
-/*
- * 扩展长度校验器，增加校验方法
- * @param - fieldValue - 需要校验字段的值
- * @returns - {bool} - 校验失败，return false，否则返回true
- */
-maxLength.prototype.verify = function(fieldValue) {
-	if((fieldValue.length > this.maxLen)){
-		this.onFail();	//超出范围，校验失败
-		return false;
-	}
-	this.onSucc();		//校验成功
-	return true;
-}
-
-/*
- * 正则表达式校验器
- * @param - expression - 校验使用的正则表达式
+ * 自定义函数校验器
  * @param - tip - 校验完成时的提示消息
- */
-function regExp(expression, tip) {
-	this.expression = expression;
+ * @param - func - 自定义的校验器
+*/
+function custom(tip, func) {
+	this.tip = tip;
+	this.val_func = func;
 	this.tip = tip;
 	this.onSucc = null;
 	this.onFail = null;
 }
 
 /*
- * 扩展正则表达式校验器，增加校验方法
- * @param - fieldValue - 需要校验字段的值
+ * 扩展自定义校验器，增加校验方法
+ * @param - fd - 需要校验字段的值
  * @returns - {bool} - 校验失败，return false，否则返回true
  */
-regExp.prototype.verify = function(fieldValue) {
-	if(!fieldValue || fieldValue === "" || fieldValue === undefined || fieldValue === null) {
-		this.onFail();	//字段为空，校验失败
-		return false;
-	}
-	if(this.expression.test(fieldValue)){
-		this.onSucc();	//正则表达式校验成功
-		return true;
+custom.prototype.verify = function(fd){
+	if(this.val_func(fd)){
+		this.onSucc();
 	}else{
-		this.onFail();	//正则表达式校验失败
-		return false;
+		this.onFail();
 	}
 }
 
@@ -373,35 +307,13 @@ Remote_val.prototype.verify=function(fd){
 }
 
 /*
- * 自定义函数校验器
- * @param - tip - 校验完成时的提示消息
- * @param - func - 自定义的校验器
-*/
-function Man_val(tip,func){
-	this.tips=tip;
-	this.val_func=func;
-	this.on_suc=null;
-	this.on_error=null;
-}
-
-/*
- * 扩展自定义校验器，增加校验方法
- * @param - fd - 需要校验字段的值
- * @returns - {bool} - 校验失败，return false，否则返回true
- */
-Man_val.prototype.verify=function(fd){
-	if(this.val_func(fd)){
-		this.on_suc();
-	}else{
-		this.on_error();
-	}
-}
-
-/*
  * 表单验证主方法入口,此时失去焦点即开始校验
  * @param - items - field对象数组
  */
 function FormValidator(items){
+	this.handlers = {};
+	this.messages = {};
+	//alert(this.handlers["check_null"]);
 	this.fieldItem = items;								//把字段校验对象数组复制给属性
 	for(i=0; i<this.fieldItem.length; i++) {			//循环数组
 		//alert(this.f_item[idx].on_suc);
@@ -421,6 +333,30 @@ FormValidator.prototype.getCheck = function(field) {
 		field.validate();
 	}
 }
+
+/*
+ * 为自定义规则注册一个回调函数
+ * @param - name - 自定义函数规则名称
+ * @param - handler - 自定义函数
+ */
+FormValidator.prototype.registerCallback = function(name, handler) {
+	if (name && typeof name === 'string' && handler && typeof handler === 'function') {
+		this.handlers[name] = handler;
+		//alert(this.handlers["check_null"]);
+	}
+
+	return this;
+};
+
+/*
+ * 为自定义规则提示消息
+ * @param - name - 自定义函数规则名称
+ * @param - handler - 自定义函数
+ */
+FormValidator.prototype.setMessage = function(rule, message) {
+	this.messages[rule] = message;
+	return this;
+};
 
 /*
  * 绑定提交按钮的onclick事件
