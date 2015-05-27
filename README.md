@@ -88,8 +88,8 @@ This is a javascript form validation library named "Stellula".
 		}).setMessage("check_field", tip);	//设置提示信息
 	If validate success, need to call the function `onSucc(tip)` and return true.
 
-		self.onFail(tip);
-		return false;
+		self.onSucc(tip);
+		return true;
 	else if validate failure, also need to call the function `onFail(tip)` and return false.
 
 		self.onFail(tip);
