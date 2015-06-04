@@ -32,6 +32,18 @@
 						$('#customTip').text(text);
 						$('#customTip').attr('class','error');
 					}
+				}),
+				new Field({
+					id:"remoteId",
+					rule:["remote[ValidateServlet,远程校验失败.]"],
+					success:function(text){
+						$('#remoteTip').text('字段格式正确.');
+						$('#remoteTip').attr('class','suc');
+					},
+					errors:function(text){
+						$('#remoteTip').text(text);
+						$('#remoteTip').attr('class','error');
+					}
 				})
 			]);
 			var tip = "该字段必须为'hello'.";	//校验完成时提示信息
@@ -61,10 +73,8 @@
 	</style>
 </head>
 <body>
-<center>
-	<h1>Stellula JS Validator</h1>
-	<hr>
-</center>
+<h1>Stellula JS Validator</h1>
+<hr>
 <table>
 	<tr>
 		<td align="right">required field:</td>
@@ -75,6 +85,11 @@
 		<td align="right">custom field:</td>
 		<td><input type="text" id="customId" name="customfield"/></td>
 		<td><span id="customTip"></span></td>
+	</tr>
+	<tr>
+		<td align="right">remote field:</td>
+		<td><input type="text" id="remoteId" name="remotefield"/></td>
+		<td><span id="remoteTip"></span></td>
 	</tr>
 </table>
 <input type="button" id="submit" value="提交"/>

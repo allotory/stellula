@@ -53,6 +53,12 @@
  };
 
 /*
+ *定义XMLHttpRequest对象
+ */
+var xmlhttp;
+var remoteFlag;
+
+/*
  * 描述对字段校验类
  * @param - fieldId - 要校验的字段的ID
  * @param - validators - 校验器对象数组
@@ -152,6 +158,16 @@ Field.prototype.hooks = {
 		return true;
 
 	},
+	remote : function(self, fieldId, url, tip) {
+		self.remote(fieldId, url, tip);
+		if(remoteFlag == true) {
+			self.onSucc(tip);
+			return true;
+		}else if(remoteFlag == false){
+			self.onFail(tip);
+			return false;
+		}
+	},
 	numeric: function(self, fieldId) {			//只能包含数字校验器
 		return self.regExp(fieldId, defaults.msg.numeric, defaults.regex.numericRegex);
 	},
@@ -219,6 +235,73 @@ Field.prototype.regExp = function(fieldId, tip, regex) {
 }
 
 /*
+ * 远程校验器
+ * @param - url - 远程服务器地址
+ * @param - tip - 校验完成时的提示消息
+ */
+Field.prototype.remote = function(fieldId, url, tip) {
+	//待校验字段值
+	var fieldValue = this.data(fieldId);
+	// 创建XMLHttpRequest对象
+	if (window.XMLHttpRequest) {
+		// 针对FireFox,Mozillar,Opera,Safari,IE7,IE8
+		xmlhttp = new XMLHttpRequest();
+		// 对某些特定版本的mozillar浏览器的bug进行修正
+		if (xmlhttp.overrideMineType) {
+			xmlhttp.overrideMineType("text/xml");
+		}
+	} else if (window.ActiveXObject) {
+		// 针对IE5，IE5.5，IE6
+		// 两个可以用于创建XMLHTTPRequest对象的控件名称。保存在一个JS数组中。
+		var activexName = [ "MSXML2.XMLHTTP", "Microsoft.XMLHTTP" ];
+		for (var i = 0; i < activeName.length; i++) {
+			// 取出一个控件名进行创建，如果成功就终止循环
+			try {
+				xmlhttp = new ActiveXObject(activexName[i]);
+				break;
+			} catch (e) {
+				alert("An exception occured in the script.Error name: "
+						+ e.name + ".Error message: " + e.message);
+			}
+		}
+
+	}
+	// 注册回调函数,只写函数名，不能写括号，写括号表示调用函数。
+	xmlhttp.onreadystatechange = this.remoteCallback;
+	// 设置连接信息(请求方式，请求的url,true表示异步方式交互)
+	//xmlhttp.open("GET", "ValidateUserServlet?fieldValue=" + fieldValue, true);
+	xmlhttp.open("GET", url + "?fieldValue=" + fieldValue, true);
+	// 发送数据，开始和服务器进行交互。
+	xmlhttp.send(null);
+
+	// 使用POST方式请求，需要手动设置http的请求头
+	// xmlhttp.setRequestHeader("Content-Type","aplication/x-www-form-urlencoded");
+	// xmlhttp.send("name=" + username);
+}
+
+Field.prototype.remoteCallback = function() {
+	// 判断对象的状态是否交互完成
+	if (xmlhttp.readyState == 4) {
+		// 判断http的交互是否成功
+		if (xmlhttp.status == 200) {
+			// 获取服务器端返回的数据（文本）
+			var responseText = xmlhttp.responseText;
+			// 用户名不唯一
+			if (responseText == "false") {
+				// 输出提示信息
+				remoteFlag = false;
+				return false;
+			} else if (responseText == "true") {
+				remoteFlag = true;
+				return true;
+			} else {
+				alert("remote errors～");
+			}
+		}
+	}
+}
+
+/*
  * 字段校验成功时调用
  * @param - tip - 字段校验提示信息
  */
@@ -252,38 +335,6 @@ Field.prototype.data = function(fieldId) {
  */
 Field.prototype.name = function(fieldId) {
 	return document.getElementById(fieldId).name;
-}
-
-/*
- * 远程校验器
- * @param - url - 远程服务器地址
- * @param - tip - 校验完成时的提示消息
- */
-function Remote_val(url,tip){
-	this.p_url=url;
-	this.tips=tip;
-	this.on_suc=null;
-	this.on_error=null;
-}
-
-/*
- * 扩展远程校验器，增加校验方法
- * @param - fd - 需要校验字段的值
- * @returns - {bool} - 校验失败，return false，否则返回true
- */
-Remote_val.prototype.verify=function(fd){
-	var self=this;
-	$.post(this.p_url,{f:fd},
-		function(data){
-			if(data.rs){
-				self.on_suc();
-				return;
-			}else{
-				self.on_error();
-			}
-		},"json"
-	);
-	return false;
 }
 
 /*
