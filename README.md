@@ -94,6 +94,50 @@ This is a javascript form validation library named "Stellula".
 
 		self.onFail(tip);
 		return false;
+* Remote Validate
+
+	Stellula.js can validate field from remote server, and you need an url and a remote validate file such as Serlet. 
+
+	first, you need to create a `Field` Object.This rule include two parameters `url` and `message`.
+	
+		new Field({
+			id:"remoteId",
+			rule:["remote[ValidateServlet,远程校验失败.]"],
+			success:function(text){
+				$('#remoteTip').text('字段格式正确.');
+				$('#remoteTip').attr('class','suc');
+			},
+			errors:function(text){
+				$('#remoteTip').text(text);
+				$('#remoteTip').attr('class','error');
+			}
+		})
+
+	then, you must create a remote validate file,like this serlet file.
+
+		protected void doGet(HttpServletRequest request,
+				HttpServletResponse response) throws ServletException, IOException {
+			try {
+				request.setCharacterEncoding("utf-8");
+				response.setContentType("text/html; charset=utf-8");
+				PrintWriter out = response.getWriter();
+				String value = request.getParameter("fieldValue");
+				System.out.println(value);
+				if (value.equals("aaa")) {
+					System.out.println(true);
+					// 校验成功
+					out.print("true");
+				} else {
+					System.out.println(false);
+					out.print("false");
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+	in serlet file must call `out.print()` function, return a string `true` or `false`.
+
 * Available Rules
 
 	<table>
